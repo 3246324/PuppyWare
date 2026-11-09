@@ -1,5 +1,5 @@
--- PuppyLib.lua v3 | PuppyWare UI Library
--- 3-panel key system • full window library • GothamBold throughout
+-- PuppyLib.lua v4 | PuppyWare UI Library
+-- Full icon support • ArqelUI-matching key system • Draggable reopen
 
 -- ═══════════════════════════════════════
 -- SERVICES
@@ -8,7 +8,6 @@ local TweenService     = game:GetService("TweenService")
 local Players          = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local HttpService      = game:GetService("HttpService")
-local RunService       = game:GetService("RunService")
 local LocalPlayer      = Players.LocalPlayer
 
 -- ═══════════════════════════════════════
@@ -22,11 +21,34 @@ local INPUT        = Color3.fromRGB( 25, 25,  25)
 local TEXT         = Color3.fromRGB(255,255, 255)
 local DIM          = Color3.fromRGB(120,120, 120)
 local SUCCESS      = Color3.fromRGB( 50,205, 110)
+local SUCCESS_BG   = Color3.fromRGB( 20, 60,  35)
 local ERROR_COL    = Color3.fromRGB(245, 70,  90)
 local DIVIDER      = Color3.fromRGB( 45, 45,  70)
-local PENDING      = Color3.fromRGB( 60, 60,  60)
+local PENDING      = Color3.fromRGB( 50, 50,  50)
 local FONT_BOLD    = Enum.Font.GothamBold
 local FONT         = Enum.Font.Gotham
+
+-- ═══════════════════════════════════════
+-- ICONS
+-- ═══════════════════════════════════════
+local ICO = "https://raw.githubusercontent.com/Cobruhehe/expert-octo-doodle/main/Icons/"
+local Icons = {
+    key      = ICO .. "lucide--key.png",
+    shield   = ICO .. "lucide--shield-minus.png",
+    check    = ICO .. "prime--check-square.png",
+    copy     = ICO .. "flowbite--clipboard-outline.png",
+    discord  = ICO .. "qlementine-icons--discord-16.png",
+    alert    = ICO .. "mdi--alert-octagon-outline.png",
+    lockUser = ICO .. "lucide--user-lock.png",
+    loading  = ICO .. "nonicons--loading-16.png",
+    close    = ICO .. "material-symbols--dangerous-outline.png",
+    changelog= ICO .. "ant-design--sync-outlined.png",
+    logo     = ICO .. "rrjlGmac.png",
+    user     = ICO .. "U.png",
+    clock    = ICO .. "Clock.png",
+    cart     = ICO .. "Cart.png",
+    lock     = ICO .. "lucide--lock.png",
+}
 
 -- ═══════════════════════════════════════
 -- HELPERS
@@ -46,50 +68,74 @@ local function corner(obj, r)
     return c
 end
 
-local function uiStroke(obj, color, thick, trans)
+local function stroke(obj, color, thick, trans)
     local s = Instance.new("UIStroke")
-    s.Color = color or DIVIDER
-    s.Thickness = thick or 1
+    s.Color      = color or DIVIDER
+    s.Thickness  = thick or 1
     s.Transparency = trans or 0.5
-    s.Parent = obj
+    s.Parent     = obj
     return s
 end
 
 local function mkFrame(parent, bg, size, pos, anch)
     local f = Instance.new("Frame")
     f.BackgroundColor3 = bg or BG
-    f.Size = size or UDim2.new(1,0,1,0)
-    f.Position = pos or UDim2.new(0,0,0,0)
-    f.AnchorPoint = anch or Vector2.new(0,0)
+    f.Size       = size or UDim2.new(1,0,1,0)
+    f.Position   = pos  or UDim2.new(0,0,0,0)
+    f.AnchorPoint= anch or Vector2.new(0,0)
     f.BorderSizePixel = 0
-    f.Parent = parent
+    f.Parent     = parent
     return f
 end
 
 local function mkLabel(parent, text, size, color, font, pos, anch)
     local l = Instance.new("TextLabel")
-    l.Text = text or ""
-    l.TextSize = size or 13
-    l.TextColor3 = color or TEXT
-    l.Font = font or FONT
+    l.Text            = text or ""
+    l.TextSize        = size or 13
+    l.TextColor3      = color or TEXT
+    l.Font            = font or FONT
     l.BackgroundTransparency = 1
-    l.Position = pos or UDim2.new(0,0,0,0)
-    l.AnchorPoint = anch or Vector2.new(0,0)
-    l.TextXAlignment = Enum.TextXAlignment.Left
-    l.TextYAlignment = Enum.TextYAlignment.Center
-    l.Parent = parent
+    l.Position        = pos  or UDim2.new(0,0,0,0)
+    l.AnchorPoint     = anch or Vector2.new(0,0)
+    l.TextXAlignment  = Enum.TextXAlignment.Left
+    l.TextYAlignment  = Enum.TextYAlignment.Center
+    l.Parent          = parent
     return l
+end
+
+local function mkIco(parent, img, sz, color, pos, anch)
+    local i = Instance.new("ImageLabel")
+    i.BackgroundTransparency = 1
+    i.Image       = img or ""
+    i.ImageColor3 = color or TEXT
+    i.Size        = UDim2.new(0, sz or 20, 0, sz or 20)
+    i.Position    = pos  or UDim2.new(0,0,0,0)
+    i.AnchorPoint = anch or Vector2.new(0,0)
+    i.ScaleType   = Enum.ScaleType.Fit
+    i.Parent      = parent
+    return i
+end
+
+local function divider(parent, y, xPad)
+    xPad = xPad or 0
+    local d = mkFrame(parent, DIVIDER,
+        UDim2.new(1,-xPad*2,0,1),
+        UDim2.new(0,xPad,0,y))
+    d.BackgroundTransparency = 0.55
+    return d
 end
 
 local function makeDrag(frame, handle)
     local dragging, dragInput, dragStart, startPos
     handle.InputBegan:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
+            dragging  = true
             dragStart = inp.Position
-            startPos = frame.Position
+            startPos  = frame.Position
             inp.Changed:Connect(function()
-                if inp.UserInputState == Enum.UserInputState.End then dragging = false end
+                if inp.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
             end)
         end
     end)
@@ -111,9 +157,10 @@ end
 local function formatTime12()
     local h = tonumber(os.date("%H"))
     local m = os.date("%M")
+    local s = os.date("%S")
     local ap = h >= 12 and "PM" or "AM"
     h = h % 12; if h == 0 then h = 12 end
-    return string.format("%d:%s %s", h, m, ap)
+    return string.format("%d:%s:%s %s", h, m, s, ap)
 end
 
 local function formatDate()
@@ -169,9 +216,11 @@ local function validateKey(cfg, key)
     if cfg.OnVerify then
         local ok, r = pcall(cfg.OnVerify, key)
         if not ok then return false, "Validation error" end
-        if type(r) == "boolean" then return r, r and "Valid" or "Invalid key" end
+        if type(r) == "boolean" then
+            return r, r and "Welcome back!" or "Invalid key"
+        end
         if type(r) == "table" then
-            return r.valid == true, r.message or (r.valid and "Valid" or (r.error or "Invalid key"))
+            return r.valid == true, r.message or (r.valid and "Welcome back!" or (r.error or "Invalid key"))
         end
         return false, "Bad validator response"
     elseif cfg.Provider == "platoboost" and cfg.WhitelistId and cfg.WhitelistId ~= "" then
@@ -179,7 +228,7 @@ local function validateKey(cfg, key)
             "https://api.platoboost.com/v1/authenticate/" .. cfg.WhitelistId .. "/" .. key)
         if ok and res then
             local d; pcall(function() d = HttpService:JSONDecode(res) end)
-            if d then return d.status == true, d.status and "Valid" or "Invalid key" end
+            if d then return d.status == true, d.status and "Welcome back!" or "Invalid key" end
         end
         return false, "Network error"
     end
@@ -187,29 +236,45 @@ local function validateKey(cfg, key)
 end
 
 -- ═══════════════════════════════════════
--- KEY SYSTEM PANELS
+-- PANEL HELPERS
 -- ═══════════════════════════════════════
 
+local function mkCloseX(parent, onClose)
+    local btn = Instance.new("ImageButton")
+    btn.Size            = UDim2.new(0,20,0,20)
+    btn.Position        = UDim2.new(1,-12,0.5,0)
+    btn.AnchorPoint     = Vector2.new(1,0.5)
+    btn.BackgroundTransparency = 1
+    btn.Image           = Icons.close
+    btn.ImageColor3     = DIM
+    btn.Parent          = parent
+    btn.MouseEnter:Connect(function()  btn.ImageColor3 = ERROR_COL end)
+    btn.MouseLeave:Connect(function()  btn.ImageColor3 = DIM       end)
+    btn.MouseButton1Click:Connect(onClose)
+    return btn
+end
+
+-- ═══════════════════════════════════════
+-- CHANGELOG PANEL (right)
+-- ═══════════════════════════════════════
 local function CreateChangelogPanel(mainFrame, panelH, panelW, gap)
-    -- Panel sits to the RIGHT of mainFrame (parent = mainFrame, clips disabled)
     local panel = mkFrame(mainFrame, HEADER,
-        UDim2.new(0, 0, 0, panelH),
-        UDim2.new(1, gap, 0, 0))
+        UDim2.new(0,0,0,panelH),
+        UDim2.new(1,gap,0,0))
     panel.ClipsDescendants = true
     corner(panel, 10)
-    local pStroke = uiStroke(panel, DIVIDER, 1, 1)
+    local sk = stroke(panel, DIVIDER, 1, 1)
 
-    -- Header bar
-    local hbar = mkFrame(panel, HEADER, UDim2.new(1,0,0,46))
-    local htitle = mkLabel(hbar, "Changelog", 12, TEXT, FONT_BOLD,
-        UDim2.new(0,14,0,0))
-    htitle.Size = UDim2.new(1,-28,1,0)
-    mkFrame(hbar, DIVIDER, UDim2.new(1,-24,0,1), UDim2.new(0,12,1,-1))
+    local hdr = mkFrame(panel, HEADER, UDim2.new(1,0,0,46))
+    mkIco(hdr, Icons.changelog, 16, ACCENT, UDim2.new(0,12,0.5,0), Vector2.new(0,0.5))
+    local tl = mkLabel(hdr, "Changelog", 12, TEXT, FONT_BOLD,
+        UDim2.new(0,34,0.5,0), Vector2.new(0,0.5))
+    tl.Size = UDim2.new(1,-60,0,18)
+    divider(hdr, 45, 0)
 
-    -- Scroll
     local scroll = Instance.new("ScrollingFrame")
-    scroll.Size = UDim2.new(1,0,1,-50)
-    scroll.Position = UDim2.new(0,0,0,50)
+    scroll.Size       = UDim2.new(1,0,1,-50)
+    scroll.Position   = UDim2.new(0,0,0,50)
     scroll.BackgroundTransparency = 1
     scroll.ScrollBarThickness = 2
     scroll.ScrollBarImageColor3 = ACCENT
@@ -219,100 +284,106 @@ local function CreateChangelogPanel(mainFrame, panelH, panelW, gap)
     scroll.Parent = panel
 
     local ll = Instance.new("UIListLayout")
-    ll.Padding = UDim.new(0,0)
-    ll.SortOrder = Enum.SortOrder.LayoutOrder
-    ll.Parent = scroll
-
+    ll.Padding     = UDim.new(0,0)
+    ll.SortOrder   = Enum.SortOrder.LayoutOrder
+    ll.Parent      = scroll
     local pp = Instance.new("UIPadding")
-    pp.PaddingLeft = UDim.new(0,12)
-    pp.PaddingRight = UDim.new(0,12)
-    pp.PaddingTop = UDim.new(0,8)
-    pp.Parent = scroll
+    pp.PaddingLeft  = UDim.new(0,14)
+    pp.PaddingRight = UDim.new(0,14)
+    pp.PaddingTop   = UDim.new(0,8)
+    pp.Parent       = scroll
 
     local isOpen = false
+
+    local function close()
+        isOpen = false
+        tw(sk, {Transparency=1}, 0.2)
+        tw(panel, {Size=UDim2.new(0,0,0,panelH)}, 0.28,
+            Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+    end
+
+    local function open()
+        isOpen = true
+        tw(sk, {Transparency=0.4}, 0.2)
+        tw(panel, {Size=UDim2.new(0,panelW,0,panelH)}, 0.4)
+    end
+
+    mkCloseX(hdr, close)
+
+    local function toggle()
+        if isOpen then close() else open() end
+    end
 
     local function refresh(entries)
         for _, c in ipairs(scroll:GetChildren()) do
             if c:IsA("Frame") then c:Destroy() end
         end
         entries = entries or {}
-        if #entries == 0 then
-            local ef = mkFrame(scroll, BG, UDim2.new(1,0,0,36))
-            ef.BackgroundTransparency = 1
-            local el = mkLabel(ef, "No entries", 11, DIM, FONT,
-                UDim2.new(0.5,0,0.5,0), Vector2.new(0.5,0.5))
-            el.Size = UDim2.new(1,0,1,0)
-            el.TextXAlignment = Enum.TextXAlignment.Center
-            return
-        end
-        for _, entry in ipairs(entries) do
-            local ef = mkFrame(scroll, BG, UDim2.new(1,-12,0,0))
+        if #entries == 0 then return end
+        for idx, entry in ipairs(entries) do
+            local ef = mkFrame(scroll, BG, UDim2.new(1,0,0,0))
             ef.BackgroundTransparency = 1
             ef.AutomaticSize = Enum.AutomaticSize.Y
+            ef.LayoutOrder   = idx
 
-            local vrow = mkFrame(ef, BG, UDim2.new(1,0,0,20))
-            vrow.BackgroundTransparency = 1
-            local vl = mkLabel(vrow, entry.Version or "v?", 11, ACCENT, FONT_BOLD)
-            vl.Size = UDim2.new(0.6,0,1,0)
-            local dl = mkLabel(vrow, entry.Date or "", 10, DIM, FONT,
+            local vl = mkLabel(ef, entry.Version or "v?", 11, ACCENT, FONT_BOLD)
+            vl.Size = UDim2.new(0.5,0,0,18)
+            local dl = mkLabel(ef, entry.Date or "", 10, DIM, FONT,
                 UDim2.new(1,0,0,0), Vector2.new(1,0))
-            dl.Size = UDim2.new(0.4,0,1,0)
+            dl.Size = UDim2.new(0.5,0,0,18)
             dl.TextXAlignment = Enum.TextXAlignment.Right
 
             local changes = entry.Changes or {}
-            local oy = 22
+            local oy = 20
             for _, ch in ipairs(changes) do
-                local cl = mkLabel(ef, "• "..ch, 11, DIM, FONT,
-                    UDim2.new(0,0,0,oy))
-                cl.Size = UDim2.new(1,0,0,16)
-                cl.TextXAlignment = Enum.TextXAlignment.Left
+                local cl = mkLabel(ef, "• " .. ch, 10, DIM, FONT, UDim2.new(0,0,0,oy))
+                cl.Size = UDim2.new(1,0,0,15)
                 cl.TextWrapped = true
-                oy = oy + 16
+                oy = oy + 15
             end
-            ef.Size = UDim2.new(1,-12,0,oy+8)
+            ef.Size = UDim2.new(1,0,0,oy+6)
 
-            local dv = mkFrame(ef, DIVIDER, UDim2.new(1,0,0,1),
-                UDim2.new(0,0,0,oy+4))
-            dv.BackgroundTransparency = 0.7
-        end
-    end
-
-    local function toggle()
-        isOpen = not isOpen
-        if isOpen then
-            tw(pStroke, {Transparency=0.4}, 0.2)
-            tw(panel, {Size=UDim2.new(0,panelW,0,panelH)}, 0.4)
-        else
-            tw(pStroke, {Transparency=1}, 0.2)
-            tw(panel, {Size=UDim2.new(0,0,0,panelH)}, 0.3,
-                Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+            if idx < #entries then
+                local dv = mkFrame(ef, DIVIDER, UDim2.new(1,0,0,1), UDim2.new(0,0,0,oy+2))
+                dv.BackgroundTransparency = 0.65
+            end
         end
     end
 
     return panel, toggle, function() return isOpen end, refresh
 end
 
+-- ═══════════════════════════════════════
+-- USER INFO PANEL (left)
+-- ═══════════════════════════════════════
 local function CreateUserInfoPanel(mainFrame, panelH, panelW, gap)
-    -- Panel sits to the LEFT of mainFrame (AnchorPoint.X=1 → right edge anchored)
     local panel = mkFrame(mainFrame, HEADER,
-        UDim2.new(0, 0, 0, panelH),
-        UDim2.new(0, -gap, 0, 0),
-        Vector2.new(1, 0))
+        UDim2.new(0,0,0,panelH),
+        UDim2.new(0,-gap,0,0),
+        Vector2.new(1,0))
     panel.ClipsDescendants = true
     corner(panel, 10)
-    local pStroke = uiStroke(panel, DIVIDER, 1, 1)
+    local sk = stroke(panel, DIVIDER, 1, 1)
+
+    local hdr = mkFrame(panel, HEADER, UDim2.new(1,0,0,46))
+    mkIco(hdr, Icons.user, 16, ACCENT, UDim2.new(0,12,0.5,0), Vector2.new(0,0.5))
+    local tl = mkLabel(hdr, "User Info", 12, TEXT, FONT_BOLD,
+        UDim2.new(0,34,0.5,0), Vector2.new(0,0.5))
+    tl.Size = UDim2.new(1,-60,0,18)
+    divider(hdr, 45, 0)
 
     -- Avatar
     local avFrame = mkFrame(panel, INPUT,
-        UDim2.new(0,52,0,52),
-        UDim2.new(0.5,0,0,14), Vector2.new(0.5,0))
-    corner(avFrame, 26)
+        UDim2.new(0,56,0,56),
+        UDim2.new(0.5,0,0,56), Vector2.new(0.5,0))
+    corner(avFrame, 28)
+    stroke(avFrame, ACCENT, 2, 0.3)
     local avImg = Instance.new("ImageLabel")
-    avImg.Size = UDim2.new(1,0,1,0)
+    avImg.Size            = UDim2.new(1,0,1,0)
     avImg.BackgroundTransparency = 1
-    avImg.Image = ""
-    avImg.Parent = avFrame
-    corner(avImg, 26)
+    avImg.Image           = ""
+    avImg.Parent          = avFrame
+    corner(avImg, 28)
     task.spawn(function()
         local ok, img = pcall(function()
             return Players:GetUserThumbnailAsync(
@@ -323,49 +394,79 @@ local function CreateUserInfoPanel(mainFrame, panelH, panelW, gap)
         if ok then avImg.Image = img end
     end)
 
-    -- Name
     local nameL = mkLabel(panel, LocalPlayer.DisplayName, 13, TEXT, FONT_BOLD,
-        UDim2.new(0.5,0,0,72), Vector2.new(0.5,0))
-    nameL.Size = UDim2.new(1,-16,0,18)
+        UDim2.new(0.5,0,0,120), Vector2.new(0.5,0))
+    nameL.Size = UDim2.new(1,-16,0,17)
     nameL.TextXAlignment = Enum.TextXAlignment.Center
 
-    local atL = mkLabel(panel, "@"..LocalPlayer.Name, 11, DIM, FONT,
-        UDim2.new(0.5,0,0,90), Vector2.new(0.5,0))
-    atL.Size = UDim2.new(1,-16,0,15)
+    local atL = mkLabel(panel, "@" .. LocalPlayer.Name, 10, DIM, FONT,
+        UDim2.new(0.5,0,0,137), Vector2.new(0.5,0))
+    atL.Size = UDim2.new(1,-16,0,14)
     atL.TextXAlignment = Enum.TextXAlignment.Center
 
-    mkFrame(panel, DIVIDER, UDim2.new(1,-24,0,1), UDim2.new(0.5,0,0,110), Vector2.new(0.5,0))
+    divider(panel, 158, 14)
 
-    -- Info row helper
-    local function infoRow(yPos, lTxt, vTxt)
+    local function infoRow(y, lbl, val)
         local row = mkFrame(panel, BG,
-            UDim2.new(1,-24,0,26),
-            UDim2.new(0.5,0,0,yPos), Vector2.new(0.5,0))
+            UDim2.new(1,-24,0,24),
+            UDim2.new(0.5,0,0,y), Vector2.new(0.5,0))
         row.BackgroundTransparency = 1
-        local lbl = mkLabel(row, lTxt, 10, DIM, FONT)
-        lbl.Size = UDim2.new(0.42,0,1,0)
-        local val = mkLabel(row, vTxt, 11, TEXT, FONT_BOLD,
+        local ll = mkLabel(row, lbl, 10, DIM, FONT)
+        ll.Size = UDim2.new(0.46,0,1,0)
+        local vl = mkLabel(row, val, 11, ACCENT, FONT_BOLD,
             UDim2.new(1,0,0,0), Vector2.new(1,0))
-        val.Size = UDim2.new(0.58,0,1,0)
-        val.TextXAlignment = Enum.TextXAlignment.Right
-        val.TextTruncate = Enum.TextTruncate.AtEnd
-        return val
+        vl.Size = UDim2.new(0.54,0,1,0)
+        vl.TextXAlignment = Enum.TextXAlignment.Right
+        vl.TextTruncate   = Enum.TextTruncate.AtEnd
+        return vl
     end
 
-    infoRow(118, "Executor", getExecutorName())
-    infoRow(146, "Device",   getDeviceType())
+    infoRow(165, "Executor", getExecutorName())
+    infoRow(191, "Device",   getDeviceType())
 
-    mkFrame(panel, DIVIDER, UDim2.new(1,-24,0,1), UDim2.new(0.5,0,0,176), Vector2.new(0.5,0))
+    divider(panel, 220, 14)
 
-    -- Clock
-    local timeL = mkLabel(panel, formatTime12(), 20, TEXT, FONT_BOLD,
-        UDim2.new(0.5,0,0,185), Vector2.new(0.5,0))
-    timeL.Size = UDim2.new(1,-16,0,26)
-    timeL.TextXAlignment = Enum.TextXAlignment.Center
+    local hwid  = getHWID()
+    local hrow  = mkFrame(panel, BG,
+        UDim2.new(1,-24,0,24),
+        UDim2.new(0.5,0,0,226), Vector2.new(0.5,0))
+    hrow.BackgroundTransparency = 1
+    local hl = mkLabel(hrow, "HWID", 10, DIM, FONT)
+    hl.Size = UDim2.new(0.3,0,1,0)
+    local hv = mkLabel(hrow, string.rep("•",10), 10, DIM, FONT,
+        UDim2.new(0.3,0,0,0))
+    hv.Size = UDim2.new(0.4,0,1,0)
+    local cpBtn = Instance.new("TextButton")
+    cpBtn.Size = UDim2.new(0,36,0,18)
+    cpBtn.Position = UDim2.new(1,0,0.5,0)
+    cpBtn.AnchorPoint = Vector2.new(1,0.5)
+    cpBtn.BackgroundColor3 = INPUT
+    cpBtn.TextColor3 = DIM
+    cpBtn.Font = FONT_BOLD
+    cpBtn.TextSize = 9
+    cpBtn.Text = "Copy"
+    cpBtn.Parent = hrow
+    corner(cpBtn, 4)
+    cpBtn.MouseButton1Click:Connect(function()
+        if setclipboard then pcall(setclipboard, hwid) end
+        cpBtn.Text = "✓"
+        task.delay(1.5, function() if cpBtn.Parent then cpBtn.Text = "Copy" end end)
+    end)
 
-    local dateL = mkLabel(panel, formatDate(), 11, DIM, FONT,
-        UDim2.new(0.5,0,0,211), Vector2.new(0.5,0))
-    dateL.Size = UDim2.new(1,-16,0,15)
+    divider(panel, 256, 14)
+
+    local clockRow = mkFrame(panel, BG,
+        UDim2.new(1,-24,0,34),
+        UDim2.new(0.5,0,0,262), Vector2.new(0.5,0))
+    clockRow.BackgroundTransparency = 1
+    mkIco(clockRow, Icons.clock, 16, ACCENT, UDim2.new(0,0,0.5,0), Vector2.new(0,0.5))
+    local timeL = mkLabel(clockRow, formatTime12(), 15, ACCENT, FONT_BOLD,
+        UDim2.new(0,22,0.5,0), Vector2.new(0,0.5))
+    timeL.Size = UDim2.new(1,-22,0,20)
+
+    local dateL = mkLabel(panel, formatDate(), 10, DIM, FONT,
+        UDim2.new(0.5,0,0,296), Vector2.new(0.5,0))
+    dateL.Size = UDim2.new(1,-24,0,14)
     dateL.TextXAlignment = Enum.TextXAlignment.Center
 
     task.spawn(function()
@@ -375,96 +476,63 @@ local function CreateUserInfoPanel(mainFrame, panelH, panelW, gap)
         end
     end)
 
-    mkFrame(panel, DIVIDER, UDim2.new(1,-24,0,1), UDim2.new(0.5,0,0,232), Vector2.new(0.5,0))
-
-    -- HWID row
-    local hwid = getHWID()
-    local hwidShort = string.sub(tostring(hwid), 1, 12) .. "..."
-    local hwidRow = mkFrame(panel, BG,
-        UDim2.new(1,-24,0,28),
-        UDim2.new(0.5,0,0,240), Vector2.new(0.5,0))
-    hwidRow.BackgroundTransparency = 1
-
-    local hLbl = mkLabel(hwidRow, "HWID", 10, DIM, FONT)
-    hLbl.Size = UDim2.new(0.3,0,1,0)
-    local hVal = mkLabel(hwidRow, hwidShort, 10, DIM, FONT,
-        UDim2.new(0.3,0,0,0))
-    hVal.Size = UDim2.new(0.42,0,1,0)
-
-    local copyBtn = Instance.new("TextButton")
-    copyBtn.Size = UDim2.new(0,38,0,20)
-    copyBtn.Position = UDim2.new(1,0,0.5,0)
-    copyBtn.AnchorPoint = Vector2.new(1,0.5)
-    copyBtn.BackgroundColor3 = INPUT
-    copyBtn.TextColor3 = DIM
-    copyBtn.Font = FONT_BOLD
-    copyBtn.TextSize = 9
-    copyBtn.Text = "Copy"
-    copyBtn.Parent = hwidRow
-    corner(copyBtn, 4)
-    copyBtn.MouseButton1Click:Connect(function()
-        if setclipboard then pcall(setclipboard, hwid) end
-        copyBtn.Text = "✓"
-        task.delay(1.5, function() copyBtn.Text = "Copy" end)
-    end)
-
     local isOpen = false
 
+    local function close()
+        isOpen = false
+        tw(sk, {Transparency=1}, 0.2)
+        tw(panel, {Size=UDim2.new(0,0,0,panelH)}, 0.28,
+            Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+    end
+
+    local function open()
+        isOpen = true
+        tw(sk, {Transparency=0.4}, 0.2)
+        tw(panel, {Size=UDim2.new(0,panelW,0,panelH)}, 0.4)
+    end
+
+    mkCloseX(hdr, close)
+
     local function toggle()
-        isOpen = not isOpen
-        if isOpen then
-            tw(pStroke, {Transparency=0.4}, 0.2)
-            tw(panel, {Size=UDim2.new(0,panelW,0,panelH)}, 0.4)
-        else
-            tw(pStroke, {Transparency=1}, 0.2)
-            tw(panel, {Size=UDim2.new(0,0,0,panelH)}, 0.3,
-                Enum.EasingStyle.Quart, Enum.EasingDirection.In)
-        end
+        if isOpen then close() else open() end
     end
 
     return panel, toggle, function() return isOpen end
 end
 
 -- ═══════════════════════════════════════
--- KEY SYSTEM BUILD
+-- KEY SYSTEM
 -- ═══════════════════════════════════════
 local function BuildKeySystem(cfg, hui, onSuccess, onClose)
     cfg = cfg or {}
 
-    local WIN_W      = 400
-    local showShop   = cfg.Shop and cfg.Shop.Enabled
-    local shopH      = showShop and 53 or 0
-    local WIN_H      = 360 + shopH
-    local HEADER_H   = 52
-    local STATUS_H   = 60
-    local ELEM_H     = 56
-    local BUTTON_H   = 42
-    local UINFO_W    = 180
-    local CLOG_W     = 220
-    local GAP        = 12
+    local WIN_W    = 420
+    local showShop = cfg.Shop and cfg.Shop.Enabled
+    local shopH    = showShop and 56 or 0
+    local WIN_H    = 400 + shopH
+    local HDR_H    = 52
+    local UINFO_W  = 192
+    local CLOG_W   = 224
+    local GAP      = 10
 
-    -- Blur
+    local icoStart = math.floor((WIN_W - 134) / 2)
+
     local blur = Instance.new("BlurEffect")
     blur.Size = 0
     blur.Parent = game:GetService("Lighting")
-    tw(blur, {Size=20}, 0.4)
+    tw(blur, {Size=18}, 0.4)
 
-    -- Root layer
     local layer = mkFrame(hui, BG, UDim2.new(1,0,1,0))
     layer.BackgroundTransparency = 1
 
-    -- Main frame
     local main = mkFrame(layer, BG,
-        UDim2.new(0,WIN_W,0,WIN_H),
+        UDim2.new(0, WIN_W*0.88, 0, WIN_H*0.88),
         UDim2.new(0.5,0,0.5,0), Vector2.new(0.5,0.5))
     corner(main, 10)
-    uiStroke(main, DIVIDER, 1, 0.5)
+    stroke(main, DIVIDER, 1, 0.5)
     main.ClipsDescendants = false
     makeDrag(main, main)
 
-    -- Entrance anim
-    main.BackgroundTransparency = 0.3
-    main.Size = UDim2.new(0, WIN_W*0.88, 0, WIN_H*0.88)
     tw(main, {BackgroundTransparency=0, Size=UDim2.new(0,WIN_W,0,WIN_H)}, 0.4)
 
     local function closeUI(cb)
@@ -479,204 +547,184 @@ local function BuildKeySystem(cfg, hui, onSuccess, onClose)
     end
 
     -- Header
-    local hdr = mkFrame(main, HEADER, UDim2.new(1,0,0,HEADER_H))
+    local hdr = mkFrame(main, HEADER, UDim2.new(1,0,0,HDR_H))
     corner(hdr, 10)
     mkFrame(hdr, HEADER, UDim2.new(1,0,0,10), UDim2.new(0,0,1,-10))
 
-    local iconImg = Instance.new("ImageLabel")
-    iconImg.Size = UDim2.new(0,26,0,26)
-    iconImg.Position = UDim2.new(0,14,0.5,0)
-    iconImg.AnchorPoint = Vector2.new(0,0.5)
-    iconImg.BackgroundTransparency = 1
-    iconImg.Image = cfg.Icon or ""
-    iconImg.ImageColor3 = ACCENT
-    iconImg.Parent = hdr
-
+    mkIco(hdr, Icons.logo, 28, nil, UDim2.new(0,14,0.5,0), Vector2.new(0,0.5))
     local titleL = mkLabel(hdr, cfg.Title or "PuppyWare", 15, TEXT, FONT_BOLD,
-        UDim2.new(0, cfg.Icon ~= "" and 46 or 14, 0.5, -9))
+        UDim2.new(0,50,0.5,-9))
     titleL.Size = UDim2.new(1,-110,0,18)
+    divider(hdr, HDR_H-1, 0)
 
-    local subL = mkLabel(hdr, cfg.Subtitle or "Enter your key to continue", 11, DIM, FONT,
-        UDim2.new(0, cfg.Icon ~= "" and 46 or 14, 0.5, 7))
-    subL.Size = UDim2.new(1,-110,0,14)
+    local hdrX = Instance.new("ImageButton")
+    hdrX.Size            = UDim2.new(0,22,0,22)
+    hdrX.Position        = UDim2.new(1,-12,0.5,0)
+    hdrX.AnchorPoint     = Vector2.new(1,0.5)
+    hdrX.BackgroundTransparency = 1
+    hdrX.Image           = Icons.close
+    hdrX.ImageColor3     = DIM
+    hdrX.Parent          = hdr
+    hdrX.MouseEnter:Connect(function()  hdrX.ImageColor3 = ERROR_COL end)
+    hdrX.MouseLeave:Connect(function()  hdrX.ImageColor3 = DIM       end)
+    hdrX.MouseButton1Click:Connect(function() closeUI(onClose) end)
 
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0,28,0,28)
-    closeBtn.Position = UDim2.new(1,-12,0.5,0)
-    closeBtn.AnchorPoint = Vector2.new(1,0.5)
-    closeBtn.BackgroundTransparency = 1
-    closeBtn.Text = "✕"
-    closeBtn.TextColor3 = DIM
-    closeBtn.Font = FONT_BOLD
-    closeBtn.TextSize = 13
-    closeBtn.Parent = hdr
-    closeBtn.MouseEnter:Connect(function() closeBtn.TextColor3 = TEXT end)
-    closeBtn.MouseLeave:Connect(function() closeBtn.TextColor3 = DIM end)
-    closeBtn.MouseButton1Click:Connect(function()
-        closeUI(onClose)
-    end)
-
-    -- Shared panels (always created)
+    -- Panels
     local _, clogToggle, clogIsOpen, clogRefresh =
         CreateChangelogPanel(main, WIN_H, CLOG_W, GAP)
-    local _, userToggle, userIsOpen =
+    local _, userToggle, _ =
         CreateUserInfoPanel(main, WIN_H, UINFO_W, GAP)
 
     if cfg.Changelog then clogRefresh(cfg.Changelog) end
 
-    -- Icon button helper
-    local function mkIconBtn(parent, ico, xOff)
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0,36,0,36)
-        btn.Position = UDim2.new(0.5,xOff,0,0)
-        btn.AnchorPoint = Vector2.new(0.5,0)
-        btn.BackgroundColor3 = INPUT
-        btn.Text = ico
-        btn.TextColor3 = DIM
-        btn.Font = FONT_BOLD
-        btn.TextSize = 14
-        btn.Parent = parent
+    -- Content frame
+    local contentH = WIN_H - HDR_H - shopH
+    local content  = mkFrame(main, BG,
+        UDim2.new(1,0,0,contentH),
+        UDim2.new(0,0,0,HDR_H))
+
+    -- Icon button builder
+    local function mkIcoBtn(img, x, disabled)
+        local btn = Instance.new("ImageButton")
+        btn.Size            = UDim2.new(0,38,0,38)
+        btn.Position        = UDim2.new(0,x,0.5,-19)
+        btn.BackgroundColor3= disabled and BG or INPUT
+        btn.Image           = ""
+        btn.Active          = not disabled
+        btn.Parent          = content
         corner(btn, 8)
-        uiStroke(btn, DIVIDER, 1, 0.5)
-        btn.MouseEnter:Connect(function() tw(btn,{BackgroundColor3=HEADER},0.1) end)
-        btn.MouseLeave:Connect(function() tw(btn,{BackgroundColor3=INPUT},0.1) end)
-        return btn
+        stroke(btn, DIVIDER, 1, disabled and 0.8 or 0.5)
+
+        local icoL = mkIco(btn, img, 20, disabled and Color3.fromRGB(50,50,50) or DIM,
+            UDim2.new(0.5,0,0.5,0), Vector2.new(0.5,0.5))
+
+        if not disabled then
+            btn.MouseEnter:Connect(function()
+                tw(btn,{BackgroundColor3=HEADER},0.1)
+                icoL.ImageColor3 = TEXT
+            end)
+            btn.MouseLeave:Connect(function()
+                tw(btn,{BackgroundColor3=INPUT},0.1)
+                icoL.ImageColor3 = DIM
+            end)
+        end
+        return btn, icoL
     end
 
-    -- Content area
-    local contentH = WIN_H - HEADER_H - shopH
-    local content = mkFrame(main, BG,
-        UDim2.new(1,0,0,contentH),
-        UDim2.new(0,0,0,HEADER_H))
-
-    -- ══════════════════════════════════
-    -- STATE: KEYLESS
-    -- ══════════════════════════════════
+    -- ── KEYLESS ──────────────────────────────────────────────────────────
     if cfg.Keyless == true then
-        -- Success box
-        local sbox = mkFrame(content, SUCCESS,
-            UDim2.new(1,-32,0,STATUS_H),
-            UDim2.new(0.5,0,0,8), Vector2.new(0.5,0))
-        sbox.BackgroundTransparency = 0.85
-        corner(sbox, 8)
-        uiStroke(sbox, SUCCESS, 1, 0.5)
 
-        local chkL = mkLabel(sbox, "✓", 20, SUCCESS, FONT_BOLD,
+        local agBox = mkFrame(content, SUCCESS_BG,
+            UDim2.new(1,-32,0,56),
+            UDim2.new(0.5,0,0,16), Vector2.new(0.5,0))
+        corner(agBox, 8)
+        stroke(agBox, SUCCESS, 1, 0.45)
+        mkIco(agBox, Icons.check, 24, SUCCESS,
             UDim2.new(0,14,0.5,0), Vector2.new(0,0.5))
-        chkL.Size = UDim2.new(0,30,1,0)
-        chkL.TextXAlignment = Enum.TextXAlignment.Center
+        local agL = mkLabel(agBox, "Access Granted", 15, SUCCESS, FONT_BOLD,
+            UDim2.new(0,46,0.3,0))
+        agL.Size = UDim2.new(1,-60,0,20)
+        local ksL = mkLabel(agBox, "Keyless Script", 11, DIM, FONT,
+            UDim2.new(0,46,0.65,0))
+        ksL.Size = UDim2.new(1,-60,0,15)
 
-        local agL = mkLabel(sbox, "Access Granted", 14, SUCCESS, FONT_BOLD,
-            UDim2.new(0,50,0,0))
-        agL.Size = UDim2.new(1,-64,0.56,0)
+        divider(content, 82, 16)
 
-        local ksL = mkLabel(sbox, "Keyless Script", 11, DIM, FONT,
-            UDim2.new(0,50,0.56,0))
-        ksL.Size = UDim2.new(1,-64,0.44,0)
-
-        -- Divider
-        mkFrame(content, DIVIDER,
-            UDim2.new(1,-32,0,1),
-            UDim2.new(0.5,0,0,78), Vector2.new(0.5,0))
-
-        -- Launch button
         local launchBtn = Instance.new("TextButton")
-        launchBtn.Size = UDim2.new(0, WIN_W*0.72, 0, BUTTON_H)
-        launchBtn.Position = UDim2.new(0.5,0,0,90)
-        launchBtn.AnchorPoint = Vector2.new(0.5,0)
-        launchBtn.BackgroundColor3 = ACCENT
-        launchBtn.Text = "Launch Script"
-        launchBtn.TextColor3 = TEXT
-        launchBtn.Font = FONT_BOLD
-        launchBtn.TextSize = 14
-        launchBtn.Parent = content
+        launchBtn.Size            = UDim2.new(1,-32,0,44)
+        launchBtn.Position        = UDim2.new(0.5,0,0,91)
+        launchBtn.AnchorPoint     = Vector2.new(0.5,0)
+        launchBtn.BackgroundColor3= ACCENT
+        launchBtn.Text            = ""
+        launchBtn.Parent          = content
         corner(launchBtn, 8)
-        launchBtn.MouseEnter:Connect(function() tw(launchBtn,{BackgroundColor3=ACCENT_HOVER},0.12) end)
-        launchBtn.MouseLeave:Connect(function() tw(launchBtn,{BackgroundColor3=ACCENT},0.12) end)
+        mkIco(launchBtn, Icons.shield, 18, TEXT,
+            UDim2.new(0.5,-58,0.5,0), Vector2.new(0,0.5))
+        local launchLbl = mkLabel(launchBtn, "Launch Script", 14, TEXT, FONT_BOLD,
+            UDim2.new(0.5,-38,0.5,0), Vector2.new(0,0.5))
+        launchLbl.Size = UDim2.new(0,120,0,20)
+        launchBtn.MouseEnter:Connect(function()  tw(launchBtn,{BackgroundColor3=ACCENT_HOVER},0.12) end)
+        launchBtn.MouseLeave:Connect(function()  tw(launchBtn,{BackgroundColor3=ACCENT},0.12)       end)
         launchBtn.MouseButton1Click:Connect(function()
             getgenv().SCRIPT_KEY = "KEYLESS"
             closeUI(onSuccess)
         end)
 
-        -- Icon row
-        local iconRow = mkFrame(content, BG,
-            UDim2.new(1,-32,0,36),
-            UDim2.new(0.5,0,0,148), Vector2.new(0.5,0))
-        iconRow.BackgroundTransparency = 1
+        divider(content, 147, 16)
 
-        local uIco = mkIconBtn(iconRow, "👤", -44)
-        local dIco = mkIconBtn(iconRow, "⬡",   0)
-        local cIco = mkIconBtn(iconRow, "↻",   44)
+        local icoY = 157
+        content.Size = UDim2.new(1,0,0,icoY + 56)
 
-        uIco.MouseButton1Click:Connect(function() userToggle() end)
-        dIco.MouseButton1Click:Connect(function()
+        local uBtn, _ = mkIcoBtn(Icons.user,      icoStart,      false)
+        local dBtn, _ = mkIcoBtn(Icons.discord,   icoStart + 48, false)
+        local hasClog = cfg.Changelog and #cfg.Changelog > 0
+        local cBtn, _ = mkIcoBtn(Icons.changelog, icoStart + 96, not hasClog)
+
+        for _, b in ipairs({uBtn, dBtn, cBtn}) do
+            b.Position = UDim2.new(0, b.Position.X.Offset, 0, icoY + 9)
+        end
+
+        uBtn.MouseButton1Click:Connect(function() userToggle() end)
+        dBtn.MouseButton1Click:Connect(function()
             if cfg.Discord and cfg.Discord ~= "" and setclipboard then
                 pcall(setclipboard, cfg.Discord)
             end
         end)
-        local hasClog = cfg.Changelog and #cfg.Changelog > 0
-        if not hasClog then
-            cIco.TextColor3 = Color3.fromRGB(50,50,50)
-            cIco.Active = false
-        else
-            cIco.MouseButton1Click:Connect(function() clogToggle() end)
+        if hasClog then
+            cBtn.MouseButton1Click:Connect(function() clogToggle() end)
         end
 
+    -- ── KEY REQUIRED ─────────────────────────────────────────────────────
     else
-        -- ══════════════════════════════════
-        -- STATE: KEY REQUIRED (+ NO GET KEY)
-        -- ══════════════════════════════════
 
-        -- Status frame
-        local statusFrame = mkFrame(content, INPUT,
-            UDim2.new(1,-32,0,STATUS_H),
-            UDim2.new(0.5,0,0,8), Vector2.new(0.5,0))
-        corner(statusFrame, 8)
-        uiStroke(statusFrame, DIVIDER, 1, 0.5)
+        -- Status: icon + colored text, NO box
+        local statusRow = mkFrame(content, BG,
+            UDim2.new(1,0,0,52), UDim2.new(0,0,0,0))
+        statusRow.BackgroundTransparency = 1
 
-        local statusDot = mkFrame(statusFrame, DIM,
-            UDim2.new(0,8,0,8),
-            UDim2.new(0,14,0.5,0), Vector2.new(0,0.5))
-        corner(statusDot, 4)
+        local statusIco = mkIco(statusRow, Icons.lockUser, 24, ACCENT,
+            UDim2.new(0,20,0.5,0), Vector2.new(0,0.5))
+        local statusTxt = mkLabel(statusRow,
+            cfg.Subtitle or "Enter your key to continue",
+            14, ACCENT, FONT_BOLD,
+            UDim2.new(0,52,0.5,0), Vector2.new(0,0.5))
+        statusTxt.Size = UDim2.new(1,-68,0,20)
 
-        local statusMain = mkLabel(statusFrame, "Waiting for key...", 13, TEXT, FONT_BOLD,
-            UDim2.new(0,30,0,0))
-        statusMain.Size = UDim2.new(1,-44,0.58,0)
-
-        local statusSub = mkLabel(statusFrame, "Enter your key below and press Redeem", 11, DIM, FONT,
-            UDim2.new(0,30,0.58,0))
-        statusSub.Size = UDim2.new(1,-44,0.42,0)
-
-        local statusColors = {
-            idle      = DIM,
-            verifying = Color3.fromRGB(255,180,50),
-            success   = SUCCESS,
-            error     = ERROR_COL,
-        }
-        local function setStatus(state, main, sub)
-            tw(statusDot, {BackgroundColor3 = statusColors[state] or DIM}, 0.2)
-            if main then statusMain.Text = main end
-            if sub  then statusSub.Text  = sub  end
+        local function setStatus(state, msg)
+            local states = {
+                idle      = {Icons.lockUser, ACCENT,    cfg.Subtitle or "Enter your key to continue"},
+                verifying = {Icons.loading,  DIM,       "Verifying key..."},
+                success   = {Icons.check,    SUCCESS,   "Key accepted!"},
+                err       = {Icons.alert,    ERROR_COL, msg or "Invalid key"},
+            }
+            local c = states[state] or states.idle
+            statusIco.Image       = c[1]
+            statusIco.ImageColor3 = c[2]
+            statusTxt.TextColor3  = c[2]
+            statusTxt.Text        = (state == "err" and msg) and msg or c[3]
         end
 
-        -- Input field
+        divider(content, 52, 0)
+
+        -- Input
         local inputFrame = mkFrame(content, INPUT,
-            UDim2.new(1,-32,0,ELEM_H),
-            UDim2.new(0.5,0,0,78), Vector2.new(0.5,0))
+            UDim2.new(1,-32,0,50),
+            UDim2.new(0.5,0,0,61), Vector2.new(0.5,0))
         corner(inputFrame, 8)
-        local inputSk = uiStroke(inputFrame, DIVIDER, 1, 0.5)
+        local inputSk = stroke(inputFrame, DIVIDER, 1, 0.5)
 
         local inputBox = Instance.new("TextBox")
-        inputBox.Size = UDim2.new(1,-20,1,0)
-        inputBox.Position = UDim2.new(0,10,0,0)
+        inputBox.Size            = UDim2.new(1,-24,1,0)
+        inputBox.Position        = UDim2.new(0,12,0,0)
         inputBox.BackgroundTransparency = 1
-        inputBox.TextColor3 = TEXT
+        inputBox.TextColor3      = TEXT
         inputBox.PlaceholderText = "Enter your key..."
         inputBox.PlaceholderColor3 = DIM
-        inputBox.Font = FONT
-        inputBox.TextSize = 13
-        inputBox.ClearTextOnFocus = false
-        inputBox.Parent = inputFrame
+        inputBox.Font            = FONT
+        inputBox.TextSize        = 13
+        inputBox.ClearTextOnFocus= false
+        inputBox.Parent          = inputFrame
+
         inputBox.Focused:Connect(function()
             tw(inputSk, {Color=ACCENT, Transparency=0.3}, 0.2)
         end)
@@ -689,146 +737,156 @@ local function BuildKeySystem(cfg, hui, onSuccess, onClose)
             if saved then inputBox.Text = saved end
         end
 
-        -- Divider
-        mkFrame(content, DIVIDER, UDim2.new(1,-32,0,1),
-            UDim2.new(0.5,0,0,144), Vector2.new(0.5,0))
+        divider(content, 119, 0)
 
-        -- Button row
+        local btnY     = 128
         local noGetKey = cfg.NoGetKey == true
 
+        -- Get Key
         local getBtn = Instance.new("TextButton")
-        getBtn.Size = UDim2.new(0, 180, 0, BUTTON_H)
-        getBtn.Position = UDim2.new(0, 16, 0, 160)
-        getBtn.BackgroundColor3 = noGetKey and PENDING or INPUT
-        getBtn.Text = noGetKey and "Unavailable" or "Get Key"
-        getBtn.TextColor3 = noGetKey and DIM or TEXT
-        getBtn.Font = FONT_BOLD
-        getBtn.TextSize = 13
-        getBtn.Active = not noGetKey
-        getBtn.Parent = content
+        getBtn.Size            = UDim2.new(0,162,0,44)
+        getBtn.Position        = UDim2.new(0,16,0,btnY)
+        getBtn.BackgroundColor3= noGetKey and PENDING or INPUT
+        getBtn.Text            = ""
+        getBtn.Active          = not noGetKey
+        getBtn.Parent          = content
         corner(getBtn, 8)
-        uiStroke(getBtn, DIVIDER, 1, noGetKey and 0.8 or 0.5)
-
+        stroke(getBtn, DIVIDER, 1, noGetKey and 0.8 or 0.5)
+        mkIco(getBtn, noGetKey and Icons.lock or Icons.key, 18,
+            noGetKey and Color3.fromRGB(60,60,60) or DIM,
+            UDim2.new(0,14,0.5,0), Vector2.new(0,0.5))
+        local getL = mkLabel(getBtn, noGetKey and "Unavailable" or "Get Key",
+            13, noGetKey and DIM or TEXT, FONT_BOLD,
+            UDim2.new(0,38,0.5,0), Vector2.new(0,0.5))
+        getL.Size = UDim2.new(1,-50,0,18)
         if not noGetKey then
-            getBtn.MouseEnter:Connect(function() tw(getBtn,{BackgroundColor3=HEADER},0.12) end)
-            getBtn.MouseLeave:Connect(function() tw(getBtn,{BackgroundColor3=INPUT},0.12) end)
+            getBtn.MouseEnter:Connect(function()  tw(getBtn,{BackgroundColor3=HEADER},0.12) end)
+            getBtn.MouseLeave:Connect(function()  tw(getBtn,{BackgroundColor3=INPUT},0.12)  end)
             getBtn.MouseButton1Click:Connect(function()
                 local link = cfg.KeyLink or ""
                 if link ~= "" and setclipboard then pcall(setclipboard, link) end
             end)
         end
 
+        -- Redeem Key
         local redeemBtn = Instance.new("TextButton")
-        redeemBtn.Size = UDim2.new(1,-212, 0, BUTTON_H)
-        redeemBtn.Position = UDim2.new(0, 204, 0, 160)
-        redeemBtn.BackgroundColor3 = ACCENT
-        redeemBtn.Text = "Redeem Key"
-        redeemBtn.TextColor3 = TEXT
-        redeemBtn.Font = FONT_BOLD
-        redeemBtn.TextSize = 13
-        redeemBtn.Parent = content
+        redeemBtn.Size            = UDim2.new(0,220,0,44)
+        redeemBtn.Position        = UDim2.new(0,186,0,btnY)
+        redeemBtn.BackgroundColor3= ACCENT
+        redeemBtn.Text            = ""
+        redeemBtn.Parent          = content
         corner(redeemBtn, 8)
-        redeemBtn.MouseEnter:Connect(function() tw(redeemBtn,{BackgroundColor3=ACCENT_HOVER},0.12) end)
-        redeemBtn.MouseLeave:Connect(function() tw(redeemBtn,{BackgroundColor3=ACCENT},0.12) end)
+        local redeemIco = mkIco(redeemBtn, Icons.shield, 18, TEXT,
+            UDim2.new(0,14,0.5,0), Vector2.new(0,0.5))
+        local redeemL = mkLabel(redeemBtn, "Redeem Key",
+            13, TEXT, FONT_BOLD,
+            UDim2.new(0,38,0.5,0), Vector2.new(0,0.5))
+        redeemL.Size = UDim2.new(1,-50,0,18)
+
+        redeemBtn.MouseEnter:Connect(function()
+            if redeemBtn.Active ~= false then
+                tw(redeemBtn,{BackgroundColor3=ACCENT_HOVER},0.12)
+            end
+        end)
+        redeemBtn.MouseLeave:Connect(function()
+            if redeemBtn.Active ~= false then
+                tw(redeemBtn,{BackgroundColor3=ACCENT},0.12)
+            end
+        end)
+
+        divider(content, 182, 0)
 
         -- Icon row
-        local iconRow = mkFrame(content, BG,
-            UDim2.new(1,-32,0,36),
-            UDim2.new(0.5,0,0,214), Vector2.new(0.5,0))
-        iconRow.BackgroundTransparency = 1
+        local icoY = 191
+        local uBtn, _ = mkIcoBtn(Icons.user,      icoStart,      false)
+        local dBtn, _ = mkIcoBtn(Icons.discord,   icoStart + 48, false)
+        local hasClog = cfg.Changelog and #cfg.Changelog > 0
+        local cBtn, _ = mkIcoBtn(Icons.changelog, icoStart + 96, not hasClog)
 
-        local uIco = mkIconBtn(iconRow, "👤", -44)
-        local dIco = mkIconBtn(iconRow, "⬡",   0)
-        local cIco = mkIconBtn(iconRow, "↻",   44)
+        for _, b in ipairs({uBtn, dBtn, cBtn}) do
+            b.Position = UDim2.new(0, b.Position.X.Offset, 0, icoY + 7)
+        end
 
-        uIco.MouseButton1Click:Connect(function() userToggle() end)
-        dIco.MouseButton1Click:Connect(function()
+        uBtn.MouseButton1Click:Connect(function() userToggle() end)
+        dBtn.MouseButton1Click:Connect(function()
             if cfg.Discord and cfg.Discord ~= "" and setclipboard then
                 pcall(setclipboard, cfg.Discord)
             end
         end)
-        local hasClog = cfg.Changelog and #cfg.Changelog > 0
-        if not hasClog then
-            cIco.TextColor3 = Color3.fromRGB(50,50,50)
-            cIco.Active = false
-        else
-            cIco.MouseButton1Click:Connect(function() clogToggle() end)
+        if hasClog then
+            cBtn.MouseButton1Click:Connect(function() clogToggle() end)
         end
 
         -- Redeem logic
         redeemBtn.MouseButton1Click:Connect(function()
             local key = inputBox.Text
             if key == "" then
-                setStatus("error", "No key entered", "Type your key into the field above")
+                setStatus("err", "Please enter a key first")
                 return
             end
+
             redeemBtn.Active = false
             tw(redeemBtn, {BackgroundColor3=PENDING}, 0.2)
-            setStatus("verifying", "Verifying...", "Contacting validation server")
+            setStatus("verifying", nil)
 
             task.spawn(function()
                 local valid, msg = validateKey(cfg, key)
                 if valid then
-                    setStatus("success", "Key accepted!", msg or "Welcome back")
-                    tw(redeemBtn, {BackgroundColor3=SUCCESS}, 0.3)
-                    redeemBtn.Text = "✓ Valid"
+                    setStatus("success", nil)
+                    tw(redeemBtn, {BackgroundColor3=SUCCESS}, 0.25)
+                    redeemIco.Image = Icons.check
+                    redeemL.Text    = "Key Valid!"
                     if cfg.Remember ~= false then
                         saveKey(cfg.KeyFile or "puppykey", key)
                     end
                     getgenv().SCRIPT_KEY = key
-                    task.delay(0.8, function() closeUI(onSuccess) end)
+                    task.delay(0.9, function()
+                        closeUI(onSuccess)
+                    end)
                 else
-                    setStatus("error", "Invalid key", msg or "Key not recognized")
-                    tw(redeemBtn, {BackgroundColor3=ACCENT}, 0.3)
-                    redeemBtn.Text = "Redeem Key"
+                    setStatus("err", msg)
+                    tw(redeemBtn, {BackgroundColor3=ACCENT}, 0.25)
+                    redeemIco.Image = Icons.shield
+                    redeemL.Text    = "Redeem Key"
                     redeemBtn.Active = true
                 end
             end)
         end)
     end
 
-    -- ══════════════════════════════════
-    -- SHOP STRIP
-    -- ══════════════════════════════════
+    -- Shop strip
     if showShop then
         local shop = mkFrame(main, HEADER,
             UDim2.new(1,0,0,shopH),
             UDim2.new(0,0,1,-shopH))
         corner(shop, 10)
         mkFrame(shop, HEADER, UDim2.new(1,0,0,10))
-
-        local shopDiv = mkFrame(shop, ACCENT, UDim2.new(1,0,0,1))
-        shopDiv.BackgroundTransparency = 0.5
-
-        local sIcon = Instance.new("ImageLabel")
-        sIcon.Size = UDim2.new(0,26,0,26)
-        sIcon.Position = UDim2.new(0,14,0.5,0)
-        sIcon.AnchorPoint = Vector2.new(0,0.5)
-        sIcon.BackgroundTransparency = 1
-        sIcon.Image = cfg.Shop.Icon or ""
-        sIcon.Parent = shop
-
+        local sd = mkFrame(shop, ACCENT, UDim2.new(1,0,0,1))
+        sd.BackgroundTransparency = 0.55
+        mkIco(shop, Icons.cart, 22, ACCENT,
+            UDim2.new(0,14,0.5,0), Vector2.new(0,0.5))
         local sTitleL = mkLabel(shop, cfg.Shop.Title or "Get Premium Access",
-            12, TEXT, FONT_BOLD, UDim2.new(0,48,0,0))
-        sTitleL.Size = UDim2.new(1,-120,0.56,0)
-
+            12, TEXT, FONT_BOLD, UDim2.new(0,44,0,0))
+        sTitleL.Size = UDim2.new(1,-120,0.58,0)
         local sSubL = mkLabel(shop, cfg.Shop.Subtitle or "Instant delivery • 24/7 support",
-            10, DIM, FONT, UDim2.new(0,48,0.56,0))
-        sSubL.Size = UDim2.new(1,-120,0.44,0)
-
+            10, DIM, FONT, UDim2.new(0,44,0.58,0))
+        sSubL.Size = UDim2.new(1,-120,0.42,0)
         local buyBtn = Instance.new("TextButton")
-        buyBtn.Size = UDim2.new(0,62,0,30)
-        buyBtn.Position = UDim2.new(1,-14,0.5,0)
-        buyBtn.AnchorPoint = Vector2.new(1,0.5)
-        buyBtn.BackgroundColor3 = ACCENT
-        buyBtn.Text = cfg.Shop.ButtonText or "Buy"
-        buyBtn.TextColor3 = TEXT
-        buyBtn.Font = FONT_BOLD
-        buyBtn.TextSize = 12
-        buyBtn.Parent = shop
+        buyBtn.Size            = UDim2.new(0,58,0,32)
+        buyBtn.Position        = UDim2.new(1,-12,0.5,0)
+        buyBtn.AnchorPoint     = Vector2.new(1,0.5)
+        buyBtn.BackgroundColor3= ACCENT
+        buyBtn.Text            = ""
+        buyBtn.Parent          = shop
         corner(buyBtn, 6)
-        buyBtn.MouseEnter:Connect(function() tw(buyBtn,{BackgroundColor3=ACCENT_HOVER},0.12) end)
-        buyBtn.MouseLeave:Connect(function() tw(buyBtn,{BackgroundColor3=ACCENT},0.12) end)
+        mkIco(buyBtn, Icons.cart, 14, TEXT,
+            UDim2.new(0,8,0.5,0), Vector2.new(0,0.5))
+        local buyL = mkLabel(buyBtn, cfg.Shop.ButtonText or "Buy",
+            12, TEXT, FONT_BOLD,
+            UDim2.new(0,26,0.5,0), Vector2.new(0,0.5))
+        buyL.Size = UDim2.new(1,-30,0,16)
+        buyBtn.MouseEnter:Connect(function()  tw(buyBtn,{BackgroundColor3=ACCENT_HOVER},0.12) end)
+        buyBtn.MouseLeave:Connect(function()  tw(buyBtn,{BackgroundColor3=ACCENT},0.12)       end)
         buyBtn.MouseButton1Click:Connect(function()
             local link = cfg.Shop.Link or ""
             if link ~= "" and setclipboard then pcall(setclipboard, link) end
@@ -847,10 +905,10 @@ function Library.new()
     if gui then gui:Destroy() end
 
     local sg = Instance.new("ScreenGui")
-    sg.Name = "PuppyWareUI"
-    sg.ResetOnSpawn = false
-    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    sg.IgnoreGuiInset = true
+    sg.Name              = "PuppyWareUI"
+    sg.ResetOnSpawn      = false
+    sg.ZIndexBehavior    = Enum.ZIndexBehavior.Sibling
+    sg.IgnoreGuiInset    = true
     if syn and syn.protect_gui then syn.protect_gui(sg) end
     sg.Parent = game:GetService("CoreGui")
 
@@ -860,7 +918,6 @@ end
 function Library:KeySystem(cfg)
     cfg = cfg or {}
 
-    -- Instant bypass: keyless, no UI
     if cfg.Keyless == true and cfg.KeylessUI == false then
         getgenv().SCRIPT_KEY = "KEYLESS"
         return true
@@ -890,23 +947,20 @@ function Library:Window(cfg)
     root.BackgroundTransparency = 1
 
     local win = mkFrame(root, BG,
-        UDim2.new(0,WIN_W,0,WIN_H),
+        UDim2.new(0,WIN_W*0.9,0,WIN_H*0.9),
         UDim2.new(0.5,0,0.5,0), Vector2.new(0.5,0.5))
     corner(win, 10)
-    uiStroke(win, DIVIDER, 1, 0.5)
+    stroke(win, DIVIDER, 1, 0.5)
     makeDrag(win, win)
-
-    win.BackgroundTransparency = 0.3
-    win.Size = UDim2.new(0, WIN_W*0.9, 0, WIN_H*0.9)
     tw(win, {BackgroundTransparency=0, Size=UDim2.new(0,WIN_W,0,WIN_H)}, 0.35)
 
-    -- Titlebar
+    -- Header
     local tb = mkFrame(win, HEADER, UDim2.new(1,0,0,46))
     corner(tb, 10)
     mkFrame(tb, HEADER, UDim2.new(1,0,0,10), UDim2.new(0,0,1,-10))
 
-    -- Accent bar
-    local acBar = mkFrame(tb, ACCENT, UDim2.new(0,3,0,22),
+    local acBar = mkFrame(tb, ACCENT,
+        UDim2.new(0,3,0,22),
         UDim2.new(0,14,0.5,0), Vector2.new(0,0.5))
     corner(acBar, 2)
 
@@ -920,36 +974,32 @@ function Library:Window(cfg)
         wSub.Size = UDim2.new(1,-300,0,16)
     end
 
-    -- Close button
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0,28,0,28)
-    closeBtn.Position = UDim2.new(1,-10,0.5,0)
-    closeBtn.AnchorPoint = Vector2.new(1,0.5)
-    closeBtn.BackgroundTransparency = 1
-    closeBtn.Text = "✕"
-    closeBtn.TextColor3 = DIM
-    closeBtn.Font = FONT_BOLD
-    closeBtn.TextSize = 13
-    closeBtn.Parent = tb
-    closeBtn.MouseEnter:Connect(function() closeBtn.TextColor3 = TEXT end)
-    closeBtn.MouseLeave:Connect(function() closeBtn.TextColor3 = DIM end)
+    local wCloseBtn = Instance.new("ImageButton")
+    wCloseBtn.Size            = UDim2.new(0,22,0,22)
+    wCloseBtn.Position        = UDim2.new(1,-12,0.5,0)
+    wCloseBtn.AnchorPoint     = Vector2.new(1,0.5)
+    wCloseBtn.BackgroundTransparency = 1
+    wCloseBtn.Image           = Icons.close
+    wCloseBtn.ImageColor3     = DIM
+    wCloseBtn.Parent          = tb
+    wCloseBtn.MouseEnter:Connect(function() wCloseBtn.ImageColor3 = ERROR_COL end)
+    wCloseBtn.MouseLeave:Connect(function() wCloseBtn.ImageColor3 = DIM       end)
 
-    -- Reopen button (bottom-left circle)
-    local reopen = Instance.new("TextButton")
-    reopen.Size = UDim2.new(0,44,0,44)
-    reopen.Position = UDim2.new(0,12,1,-12)
-    reopen.AnchorPoint = Vector2.new(0,1)
-    reopen.BackgroundColor3 = ACCENT
-    reopen.Text = "P"
-    reopen.TextColor3 = TEXT
-    reopen.Font = FONT_BOLD
-    reopen.TextSize = 16
-    reopen.Visible = false
-    reopen.Parent = root
-    corner(reopen, 22)
-    uiStroke(reopen, ACCENT, 2, 0.6)
+    -- Reopen button: logo image, draggable
+    local reopen = Instance.new("ImageButton")
+    reopen.Size            = UDim2.new(0,52,0,52)
+    reopen.Position        = UDim2.new(0,12,1,-72)
+    reopen.AnchorPoint     = Vector2.new(0,1)
+    reopen.BackgroundColor3= HEADER
+    reopen.Image           = Icons.logo
+    reopen.ScaleType       = Enum.ScaleType.Fit
+    reopen.Visible         = false
+    reopen.Parent          = root
+    corner(reopen, 10)
+    stroke(reopen, ACCENT, 1.5, 0)
+    makeDrag(reopen, reopen)
 
-    closeBtn.MouseButton1Click:Connect(function()
+    wCloseBtn.MouseButton1Click:Connect(function()
         win.Visible = false; reopen.Visible = true
     end)
     reopen.MouseButton1Click:Connect(function()
@@ -963,27 +1013,23 @@ function Library:Window(cfg)
     mkFrame(sidebar, HEADER, UDim2.new(0,10,1,0), UDim2.new(1,-10,0,0))
 
     local sll = Instance.new("UIListLayout")
-    sll.Padding = UDim.new(0,4)
-    sll.SortOrder = Enum.SortOrder.LayoutOrder
-    sll.Parent = sidebar
-
+    sll.Padding    = UDim.new(0,4)
+    sll.SortOrder  = Enum.SortOrder.LayoutOrder
+    sll.Parent     = sidebar
     local slp = Instance.new("UIPadding")
-    slp.PaddingTop = UDim.new(0,10)
+    slp.PaddingTop  = UDim.new(0,10)
     slp.PaddingLeft = UDim.new(0,8)
-    slp.PaddingRight = UDim.new(0,8)
-    slp.Parent = sidebar
+    slp.PaddingRight= UDim.new(0,8)
+    slp.Parent      = sidebar
 
-    -- Sidebar divider line
     mkFrame(win, DIVIDER,
         UDim2.new(0,1,1,-46),
         UDim2.new(0,SIDE_W,0,46))
 
-    -- Content area
     local contentArea = mkFrame(win, BG,
         UDim2.new(1,-SIDE_W-1,1,-46),
         UDim2.new(0,SIDE_W+1,0,46))
 
-    -- Window API
     local WindowAPI = {}
     local tabCount  = 0
     local activeTab = nil
@@ -992,69 +1038,75 @@ function Library:Window(cfg)
         tabCount = tabCount + 1
         local isFirst = (tabCount == 1)
 
-        -- Tab button
         local tabBtn = Instance.new("TextButton")
-        tabBtn.Size = UDim2.new(1,0,0,36)
-        tabBtn.BackgroundColor3 = isFirst and INPUT or HEADER
-        tabBtn.Text = ""
-        tabBtn.Parent = sidebar
+        tabBtn.Size            = UDim2.new(1,0,0,36)
+        tabBtn.BackgroundColor3= isFirst and INPUT or HEADER
+        tabBtn.Text            = ""
+        tabBtn.Parent          = sidebar
         corner(tabBtn, 8)
 
-        local tIco = mkLabel(tabBtn, tabIcon or "•", 13,
-            isFirst and ACCENT or DIM, FONT_BOLD,
-            UDim2.new(0,10,0.5,0), Vector2.new(0,0.5))
-        tIco.Size = UDim2.new(0,20,1,0)
+        local accentBar = mkFrame(tabBtn, ACCENT,
+            UDim2.new(0,3,0,18),
+            UDim2.new(0,0,0.5,0), Vector2.new(0,0.5))
+        corner(accentBar, 2)
+        accentBar.Visible = isFirst
 
         local tLbl = mkLabel(tabBtn, tabTitle, 12,
             isFirst and TEXT or DIM, FONT_BOLD,
-            UDim2.new(0,34,0.5,0), Vector2.new(0,0.5))
-        tLbl.Size = UDim2.new(1,-40,1,0)
+            UDim2.new(0,24,0.5,0), Vector2.new(0,0.5))
+        tLbl.Size = UDim2.new(1,-30,0,16)
 
-        -- Page
+        local ticoL = mkLabel(tabBtn, tabIcon or "•", 13,
+            isFirst and ACCENT or DIM, FONT_BOLD,
+            UDim2.new(1,-12,0.5,0), Vector2.new(1,0.5))
+        ticoL.Size = UDim2.new(0,16,1,0)
+        ticoL.TextXAlignment = Enum.TextXAlignment.Center
+
         local page = mkFrame(contentArea, BG, UDim2.new(1,0,1,0))
         page.Visible = isFirst
         page.ClipsDescendants = true
 
         local scroll = Instance.new("ScrollingFrame")
-        scroll.Size = UDim2.new(1,0,1,0)
+        scroll.Size            = UDim2.new(1,0,1,0)
         scroll.BackgroundTransparency = 1
         scroll.ScrollBarThickness = 2
         scroll.ScrollBarImageColor3 = ACCENT
-        scroll.CanvasSize = UDim2.new(0,0,0,0)
+        scroll.CanvasSize      = UDim2.new(0,0,0,0)
         scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
         scroll.BorderSizePixel = 0
-        scroll.Parent = page
+        scroll.Parent          = page
 
         local pll = Instance.new("UIListLayout")
-        pll.Padding = UDim.new(0,6)
+        pll.Padding   = UDim.new(0,6)
         pll.SortOrder = Enum.SortOrder.LayoutOrder
-        pll.Parent = scroll
+        pll.Parent    = scroll
 
         local plp = Instance.new("UIPadding")
-        plp.PaddingTop = UDim.new(0,10)
-        plp.PaddingLeft = UDim.new(0,12)
+        plp.PaddingTop   = UDim.new(0,10)
+        plp.PaddingLeft  = UDim.new(0,12)
         plp.PaddingRight = UDim.new(0,12)
-        plp.Parent = scroll
+        plp.Parent       = scroll
 
         if isFirst then
-            activeTab = {btn=tabBtn, lbl=tLbl, ico=tIco, page=page}
+            activeTab = {btn=tabBtn, lbl=tLbl, ico=ticoL, bar=accentBar, page=page}
         end
 
         tabBtn.MouseButton1Click:Connect(function()
             if activeTab then
-                activeTab.page.Visible = false
-                tw(activeTab.btn, {BackgroundColor3=HEADER}, 0.15)
-                activeTab.lbl.TextColor3 = DIM
-                activeTab.ico.TextColor3 = DIM
+                activeTab.page.Visible        = false
+                tw(activeTab.btn,{BackgroundColor3=HEADER},0.15)
+                activeTab.lbl.TextColor3      = DIM
+                activeTab.ico.TextColor3      = DIM
+                activeTab.bar.Visible         = false
             end
-            page.Visible = true
-            tw(tabBtn, {BackgroundColor3=INPUT}, 0.15)
-            tLbl.TextColor3 = TEXT
-            tIco.TextColor3 = ACCENT
-            activeTab = {btn=tabBtn, lbl=tLbl, ico=tIco, page=page}
+            page.Visible          = true
+            tw(tabBtn,{BackgroundColor3=INPUT},0.15)
+            tLbl.TextColor3       = TEXT
+            ticoL.TextColor3      = ACCENT
+            accentBar.Visible     = true
+            activeTab = {btn=tabBtn, lbl=tLbl, ico=ticoL, bar=accentBar, page=page}
         end)
 
-        -- ── Element helpers ──
         local function elem(h, transparent)
             local el = mkFrame(scroll, transparent and BG or INPUT, UDim2.new(1,0,0,h))
             if transparent then el.BackgroundTransparency = 1 end
@@ -1065,7 +1117,7 @@ function Library:Window(cfg)
         local TabAPI = {}
 
         function TabAPI:Label(text, color)
-            local el = elem(30, true)
+            local el = elem(28, true)
             local l = mkLabel(el, text, 12, color or DIM, FONT,
                 UDim2.new(0,10,0.5,0), Vector2.new(0,0.5))
             l.Size = UDim2.new(1,-20,1,0)
@@ -1076,7 +1128,7 @@ function Library:Window(cfg)
             local el = elem(26, true)
             local l = mkLabel(el, string.upper(text), 10, ACCENT, FONT_BOLD,
                 UDim2.new(0,10,0.5,0), Vector2.new(0,0.5))
-            l.Size = UDim2.new(0.4,0,1,0)
+            l.Size = UDim2.new(0.42,0,1,0)
             local dv = mkFrame(el, DIVIDER, UDim2.new(0.6,-10,0,1),
                 UDim2.new(0.4,8,0.5,0), Vector2.new(0,0.5))
             dv.BackgroundTransparency = 0.6
@@ -1093,18 +1145,18 @@ function Library:Window(cfg)
                 d.Size = UDim2.new(1,-90,0.45,0)
             end
             local runBtn = Instance.new("TextButton")
-            runBtn.Size = UDim2.new(0,58,0,28)
-            runBtn.Position = UDim2.new(1,-10,0.5,0)
-            runBtn.AnchorPoint = Vector2.new(1,0.5)
-            runBtn.BackgroundColor3 = ACCENT
-            runBtn.Text = "Run"
-            runBtn.TextColor3 = TEXT
-            runBtn.Font = FONT_BOLD
-            runBtn.TextSize = 12
-            runBtn.Parent = el
+            runBtn.Size            = UDim2.new(0,56,0,28)
+            runBtn.Position        = UDim2.new(1,-10,0.5,0)
+            runBtn.AnchorPoint     = Vector2.new(1,0.5)
+            runBtn.BackgroundColor3= ACCENT
+            runBtn.Text            = "Run"
+            runBtn.TextColor3      = TEXT
+            runBtn.Font            = FONT_BOLD
+            runBtn.TextSize        = 12
+            runBtn.Parent          = el
             corner(runBtn, 6)
-            runBtn.MouseEnter:Connect(function() tw(runBtn,{BackgroundColor3=ACCENT_HOVER},0.1) end)
-            runBtn.MouseLeave:Connect(function() tw(runBtn,{BackgroundColor3=ACCENT},0.1) end)
+            runBtn.MouseEnter:Connect(function()  tw(runBtn,{BackgroundColor3=ACCENT_HOVER},0.1) end)
+            runBtn.MouseLeave:Connect(function()  tw(runBtn,{BackgroundColor3=ACCENT},0.1)       end)
             runBtn.MouseButton1Click:Connect(function()
                 if callback then pcall(callback) end
             end)
@@ -1112,7 +1164,7 @@ function Library:Window(cfg)
         end
 
         function TabAPI:Toggle(text, desc, default, callback)
-            local el = elem(44)
+            local el    = elem(44)
             local state = default == true
             local l = mkLabel(el, text, 13, TEXT, FONT_BOLD,
                 UDim2.new(0,14,0,0))
@@ -1122,7 +1174,6 @@ function Library:Window(cfg)
                     UDim2.new(0,14,0.55,0))
                 d.Size = UDim2.new(1,-80,0.45,0)
             end
-
             local track = mkFrame(el, state and ACCENT or PENDING,
                 UDim2.new(0,44,0,24),
                 UDim2.new(1,-58,0.5,0), Vector2.new(0,0.5))
@@ -1136,15 +1187,15 @@ function Library:Window(cfg)
             local function update(v)
                 state = v
                 tw(track, {BackgroundColor3 = state and ACCENT or PENDING}, 0.2)
-                tw(thumb, {Position = UDim2.new(state and 1 or 0, state and -21 or 3, 0.5, 0)}, 0.2)
+                tw(thumb, {Position = UDim2.new(state and 1 or 0, state and -21 or 3, 0.5,0)}, 0.2)
                 if callback then pcall(callback, state) end
             end
 
             local overlay = Instance.new("TextButton")
-            overlay.Size = UDim2.new(1,0,1,0)
+            overlay.Size            = UDim2.new(1,0,1,0)
             overlay.BackgroundTransparency = 1
-            overlay.Text = ""
-            overlay.Parent = el
+            overlay.Text            = ""
+            overlay.Parent          = el
             overlay.MouseButton1Click:Connect(function() update(not state) end)
 
             return {
@@ -1154,8 +1205,10 @@ function Library:Window(cfg)
         end
 
         function TabAPI:Slider(text, desc, min, max, default, callback)
-            min = min or 0; max = max or 100; default = math.clamp(default or min, min, max)
-            local el = elem(56)
+            min     = min     or 0
+            max     = max     or 100
+            default = math.clamp(default or min, min, max)
+            local el  = elem(56)
             local val = default
 
             local topL = mkLabel(el, text, 13, TEXT, FONT_BOLD,
@@ -1181,10 +1234,13 @@ function Library:Window(cfg)
                 UDim2.new((val-min)/(max-min),0,1,0))
             corner(fill, 3)
 
-            local knob = mkFrame(el, TEXT,
-                UDim2.new(0,14,0,14),
-                UDim2.new(0, 14 + (val-min)/(max-min) * math.max(el.AbsoluteSize.X - 28, 1) - 7, 0, 38))
+            local knob = mkFrame(el, TEXT, UDim2.new(0,14,0,14))
             corner(knob, 7)
+            task.defer(function()
+                local rel = (val-min)/(max-min)
+                local ew  = el.AbsoluteSize.X
+                knob.Position = UDim2.new(0, 14 + rel*(ew-28) - 7, 0, 38)
+            end)
 
             local dragging = false
             local function update(x)
@@ -1194,7 +1250,8 @@ function Library:Window(cfg)
                 val = math.floor(min + rel*(max-min) + 0.5)
                 valL.Text = tostring(val)
                 fill.Size = UDim2.new(rel,0,1,0)
-                knob.Position = UDim2.new(0, 14 + rel*(el.AbsoluteSize.X-28)-7, 0, 38)
+                local ew  = el.AbsoluteSize.X
+                knob.Position = UDim2.new(0, 14 + rel*(ew-28) - 7, 0, 38)
                 if callback then pcall(callback, val) end
             end
 
@@ -1227,9 +1284,9 @@ function Library:Window(cfg)
         end
 
         function TabAPI:Dropdown(text, options, default, callback)
-            options = options or {}
+            options  = options or {}
             local selected = default or options[1] or "Select..."
-            local open = false
+            local open     = false
             local el = elem(44)
             el.ClipsDescendants = false
             el.ZIndex = 10
@@ -1239,19 +1296,19 @@ function Library:Window(cfg)
             l.Size = UDim2.new(0.46,0,0,18)
 
             local dropBtn = Instance.new("TextButton")
-            dropBtn.Size = UDim2.new(0.54,-14,0,28)
-            dropBtn.Position = UDim2.new(0.46,0,0.5,0)
-            dropBtn.AnchorPoint = Vector2.new(0,0.5)
-            dropBtn.BackgroundColor3 = HEADER
-            dropBtn.Text = selected
-            dropBtn.TextColor3 = TEXT
-            dropBtn.Font = FONT
-            dropBtn.TextSize = 12
-            dropBtn.TextTruncate = Enum.TextTruncate.AtEnd
-            dropBtn.ZIndex = 10
-            dropBtn.Parent = el
+            dropBtn.Size            = UDim2.new(0.54,-14,0,28)
+            dropBtn.Position        = UDim2.new(0.46,0,0.5,0)
+            dropBtn.AnchorPoint     = Vector2.new(0,0.5)
+            dropBtn.BackgroundColor3= HEADER
+            dropBtn.Text            = selected
+            dropBtn.TextColor3      = TEXT
+            dropBtn.Font            = FONT
+            dropBtn.TextSize        = 12
+            dropBtn.TextTruncate    = Enum.TextTruncate.AtEnd
+            dropBtn.ZIndex          = 10
+            dropBtn.Parent          = el
             corner(dropBtn, 6)
-            uiStroke(dropBtn, DIVIDER, 1, 0.5)
+            stroke(dropBtn, DIVIDER, 1, 0.5)
 
             local arrow = mkLabel(dropBtn, "▾", 11, DIM, FONT_BOLD,
                 UDim2.new(1,-6,0.5,0), Vector2.new(1,0.5))
@@ -1262,37 +1319,37 @@ function Library:Window(cfg)
                 UDim2.new(0.54,-14,0,0),
                 UDim2.new(0.46,0,1,2))
             listF.ClipsDescendants = true
-            listF.ZIndex = 20
+            listF.ZIndex           = 20
             corner(listF, 6)
-            uiStroke(listF, DIVIDER, 1, 0.3)
+            stroke(listF, DIVIDER, 1, 0.3)
 
             local lll = Instance.new("UIListLayout")
             lll.SortOrder = Enum.SortOrder.LayoutOrder
-            lll.Parent = listF
+            lll.Parent    = listF
             local llp = Instance.new("UIPadding")
             llp.PaddingAll = UDim.new(0,4)
-            llp.Parent = listF
+            llp.Parent     = listF
 
             for _, opt in ipairs(options) do
                 local ob = Instance.new("TextButton")
-                ob.Size = UDim2.new(1,0,0,26)
-                ob.BackgroundColor3 = HEADER
-                ob.Text = "  "..opt
-                ob.TextColor3 = TEXT
-                ob.Font = FONT
-                ob.TextSize = 12
-                ob.TextXAlignment = Enum.TextXAlignment.Left
-                ob.ZIndex = 21
-                ob.Parent = listF
+                ob.Size            = UDim2.new(1,0,0,26)
+                ob.BackgroundColor3= HEADER
+                ob.Text            = "  " .. opt
+                ob.TextColor3      = TEXT
+                ob.Font            = FONT
+                ob.TextSize        = 12
+                ob.TextXAlignment  = Enum.TextXAlignment.Left
+                ob.ZIndex          = 21
+                ob.Parent          = listF
                 corner(ob, 4)
-                ob.MouseEnter:Connect(function() tw(ob,{BackgroundColor3=INPUT},0.1) end)
-                ob.MouseLeave:Connect(function() tw(ob,{BackgroundColor3=HEADER},0.1) end)
+                ob.MouseEnter:Connect(function()  tw(ob,{BackgroundColor3=INPUT},0.1) end)
+                ob.MouseLeave:Connect(function()  tw(ob,{BackgroundColor3=HEADER},0.1) end)
                 ob.MouseButton1Click:Connect(function()
                     selected = opt
                     dropBtn.Text = opt
                     open = false
-                    tw(listF, {Size=UDim2.new(0.54,-14,0,0)}, 0.2)
-                    tw(arrow, {Rotation=0}, 0.2)
+                    tw(listF,{Size=UDim2.new(0.54,-14,0,0)},0.2)
+                    tw(arrow,{Rotation=0},0.2)
                     if callback then pcall(callback, opt) end
                 end)
             end
@@ -1300,8 +1357,8 @@ function Library:Window(cfg)
             dropBtn.MouseButton1Click:Connect(function()
                 open = not open
                 local h = open and math.min(#options*26+8, 158) or 0
-                tw(listF, {Size=UDim2.new(0.54,-14,0,h)}, 0.2)
-                tw(arrow, {Rotation=open and 180 or 0}, 0.2)
+                tw(listF,{Size=UDim2.new(0.54,-14,0,h)},0.2)
+                tw(arrow,{Rotation=open and 180 or 0},0.2)
             end)
 
             return {
@@ -1311,8 +1368,8 @@ function Library:Window(cfg)
         end
 
         function TabAPI:Keybind(text, default, callback)
-            local bound = default or Enum.KeyCode.Unknown
-            local listening = false
+            local bound    = default or Enum.KeyCode.Unknown
+            local listening= false
             local el = elem(44)
 
             local l = mkLabel(el, text, 13, TEXT, FONT_BOLD,
@@ -1320,31 +1377,30 @@ function Library:Window(cfg)
             l.Size = UDim2.new(0.6,0,1,0)
 
             local kBtn = Instance.new("TextButton")
-            kBtn.Size = UDim2.new(0,76,0,28)
-            kBtn.Position = UDim2.new(1,-10,0.5,0)
-            kBtn.AnchorPoint = Vector2.new(1,0.5)
-            kBtn.BackgroundColor3 = INPUT
-            kBtn.Text = bound.Name
-            kBtn.TextColor3 = ACCENT
-            kBtn.Font = FONT_BOLD
-            kBtn.TextSize = 11
-            kBtn.Parent = el
+            kBtn.Size            = UDim2.new(0,76,0,28)
+            kBtn.Position        = UDim2.new(1,-10,0.5,0)
+            kBtn.AnchorPoint     = Vector2.new(1,0.5)
+            kBtn.BackgroundColor3= INPUT
+            kBtn.Text            = bound.Name
+            kBtn.TextColor3      = ACCENT
+            kBtn.Font            = FONT_BOLD
+            kBtn.TextSize        = 11
+            kBtn.Parent          = el
             corner(kBtn, 6)
-            uiStroke(kBtn, DIVIDER, 1, 0.5)
+            stroke(kBtn, DIVIDER, 1, 0.5)
 
             kBtn.MouseButton1Click:Connect(function()
-                listening = true
-                kBtn.Text = "..."
+                listening       = true
+                kBtn.Text       = "..."
                 kBtn.TextColor3 = DIM
             end)
-
             UserInputService.InputBegan:Connect(function(inp, gp)
                 if gp then return end
                 if listening and inp.UserInputType == Enum.UserInputType.Keyboard then
-                    bound = inp.KeyCode
-                    kBtn.Text = bound.Name
+                    bound           = inp.KeyCode
+                    kBtn.Text       = bound.Name
                     kBtn.TextColor3 = ACCENT
-                    listening = false
+                    listening       = false
                 elseif not listening and inp.KeyCode == bound then
                     if callback then pcall(callback) end
                 end
@@ -1366,20 +1422,22 @@ function Library:Window(cfg)
                 UDim2.new(0.6,-14,0,28),
                 UDim2.new(0.4,0,0.5,0), Vector2.new(0,0.5))
             corner(iFrame, 6)
-            local iSk = uiStroke(iFrame, DIVIDER, 1, 0.5)
+            local iSk = stroke(iFrame, DIVIDER, 1, 0.5)
 
             local box = Instance.new("TextBox")
-            box.Size = UDim2.new(1,-16,1,0)
-            box.Position = UDim2.new(0,8,0,0)
+            box.Size            = UDim2.new(1,-16,1,0)
+            box.Position        = UDim2.new(0,8,0,0)
             box.BackgroundTransparency = 1
-            box.TextColor3 = TEXT
+            box.TextColor3      = TEXT
             box.PlaceholderText = placeholder or ""
             box.PlaceholderColor3 = DIM
-            box.Font = FONT
-            box.TextSize = 12
-            box.ClearTextOnFocus = false
-            box.Parent = iFrame
-            box.Focused:Connect(function() tw(iSk,{Color=ACCENT,Transparency=0.3},0.2) end)
+            box.Font            = FONT
+            box.TextSize        = 12
+            box.ClearTextOnFocus= false
+            box.Parent          = iFrame
+            box.Focused:Connect(function()
+                tw(iSk,{Color=ACCENT,Transparency=0.3},0.2)
+            end)
             box.FocusLost:Connect(function(enter)
                 tw(iSk,{Color=DIVIDER,Transparency=0.5},0.2)
                 if enter and callback then pcall(callback, box.Text) end
