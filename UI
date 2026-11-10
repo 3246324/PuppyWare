@@ -1,18 +1,9 @@
--- PuppyLib.lua v4 | PuppyWare UI Library
--- Full icon support • ArqelUI-matching key system • Draggable reopen
-
--- ═══════════════════════════════════════
--- SERVICES
--- ═══════════════════════════════════════
 local TweenService     = game:GetService("TweenService")
 local Players          = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local HttpService      = game:GetService("HttpService")
 local LocalPlayer      = Players.LocalPlayer
 
--- ═══════════════════════════════════════
--- COLORS & FONTS
--- ═══════════════════════════════════════
 local ACCENT       = Color3.fromRGB(232, 17,  85)
 local ACCENT_HOVER = Color3.fromRGB(255, 45, 105)
 local BG           = Color3.fromRGB( 15, 15,  15)
@@ -28,9 +19,6 @@ local PENDING      = Color3.fromRGB( 50, 50,  50)
 local FONT_BOLD    = Enum.Font.GothamBold
 local FONT         = Enum.Font.Gotham
 
--- ═══════════════════════════════════════
--- ICONS
--- ═══════════════════════════════════════
 local ICO = "https://raw.githubusercontent.com/Cobruhehe/expert-octo-doodle/main/Icons/"
 local Icons = {
     key      = ICO .. "lucide--key.png",
@@ -50,9 +38,6 @@ local Icons = {
     lock     = ICO .. "lucide--lock.png",
 }
 
--- ═══════════════════════════════════════
--- HELPERS
--- ═══════════════════════════════════════
 local function tw(obj, props, t, style, dir)
     TweenService:Create(obj,
         TweenInfo.new(t or 0.3,
@@ -235,10 +220,6 @@ local function validateKey(cfg, key)
     return false, "No validator configured"
 end
 
--- ═══════════════════════════════════════
--- PANEL HELPERS
--- ═══════════════════════════════════════
-
 local function mkCloseX(parent, onClose)
     local btn = Instance.new("ImageButton")
     btn.Size            = UDim2.new(0,20,0,20)
@@ -254,9 +235,6 @@ local function mkCloseX(parent, onClose)
     return btn
 end
 
--- ═══════════════════════════════════════
--- CHANGELOG PANEL (right)
--- ═══════════════════════════════════════
 local function CreateChangelogPanel(mainFrame, panelH, panelW, gap)
     local panel = mkFrame(mainFrame, HEADER,
         UDim2.new(0,0,0,panelH),
@@ -353,9 +331,6 @@ local function CreateChangelogPanel(mainFrame, panelH, panelW, gap)
     return panel, toggle, function() return isOpen end, refresh
 end
 
--- ═══════════════════════════════════════
--- USER INFO PANEL (left)
--- ═══════════════════════════════════════
 local function CreateUserInfoPanel(mainFrame, panelH, panelW, gap)
     local panel = mkFrame(mainFrame, HEADER,
         UDim2.new(0,0,0,panelH),
@@ -500,9 +475,6 @@ local function CreateUserInfoPanel(mainFrame, panelH, panelW, gap)
     return panel, toggle, function() return isOpen end
 end
 
--- ═══════════════════════════════════════
--- KEY SYSTEM
--- ═══════════════════════════════════════
 local function BuildKeySystem(cfg, hui, onSuccess, onClose)
     cfg = cfg or {}
 
@@ -546,7 +518,6 @@ local function BuildKeySystem(cfg, hui, onSuccess, onClose)
         end)
     end
 
-    -- Header
     local hdr = mkFrame(main, HEADER, UDim2.new(1,0,0,HDR_H))
     corner(hdr, 10)
     mkFrame(hdr, HEADER, UDim2.new(1,0,0,10), UDim2.new(0,0,1,-10))
@@ -569,7 +540,6 @@ local function BuildKeySystem(cfg, hui, onSuccess, onClose)
     hdrX.MouseLeave:Connect(function()  hdrX.ImageColor3 = DIM       end)
     hdrX.MouseButton1Click:Connect(function() closeUI(onClose) end)
 
-    -- Panels
     local _, clogToggle, clogIsOpen, clogRefresh =
         CreateChangelogPanel(main, WIN_H, CLOG_W, GAP)
     local _, userToggle, _ =
@@ -577,13 +547,11 @@ local function BuildKeySystem(cfg, hui, onSuccess, onClose)
 
     if cfg.Changelog then clogRefresh(cfg.Changelog) end
 
-    -- Content frame
     local contentH = WIN_H - HDR_H - shopH
     local content  = mkFrame(main, BG,
         UDim2.new(1,0,0,contentH),
         UDim2.new(0,0,0,HDR_H))
 
-    -- Icon button builder
     local function mkIcoBtn(img, x, disabled)
         local btn = Instance.new("ImageButton")
         btn.Size            = UDim2.new(0,38,0,38)
@@ -611,7 +579,6 @@ local function BuildKeySystem(cfg, hui, onSuccess, onClose)
         return btn, icoL
     end
 
-    -- ── KEYLESS ──────────────────────────────────────────────────────────
     if cfg.Keyless == true then
 
         local agBox = mkFrame(content, SUCCESS_BG,
@@ -674,10 +641,8 @@ local function BuildKeySystem(cfg, hui, onSuccess, onClose)
             cBtn.MouseButton1Click:Connect(function() clogToggle() end)
         end
 
-    -- ── KEY REQUIRED ─────────────────────────────────────────────────────
     else
 
-        -- Status: icon + colored text, NO box
         local statusRow = mkFrame(content, BG,
             UDim2.new(1,0,0,52), UDim2.new(0,0,0,0))
         statusRow.BackgroundTransparency = 1
@@ -706,7 +671,6 @@ local function BuildKeySystem(cfg, hui, onSuccess, onClose)
 
         divider(content, 52, 0)
 
-        -- Input
         local inputFrame = mkFrame(content, INPUT,
             UDim2.new(1,-32,0,50),
             UDim2.new(0.5,0,0,61), Vector2.new(0.5,0))
@@ -742,7 +706,6 @@ local function BuildKeySystem(cfg, hui, onSuccess, onClose)
         local btnY     = 128
         local noGetKey = cfg.NoGetKey == true
 
-        -- Get Key
         local getBtn = Instance.new("TextButton")
         getBtn.Size            = UDim2.new(0,162,0,44)
         getBtn.Position        = UDim2.new(0,16,0,btnY)
@@ -768,7 +731,6 @@ local function BuildKeySystem(cfg, hui, onSuccess, onClose)
             end)
         end
 
-        -- Redeem Key
         local redeemBtn = Instance.new("TextButton")
         redeemBtn.Size            = UDim2.new(0,220,0,44)
         redeemBtn.Position        = UDim2.new(0,186,0,btnY)
@@ -796,7 +758,6 @@ local function BuildKeySystem(cfg, hui, onSuccess, onClose)
 
         divider(content, 182, 0)
 
-        -- Icon row
         local icoY = 191
         local uBtn, _ = mkIcoBtn(Icons.user,      icoStart,      false)
         local dBtn, _ = mkIcoBtn(Icons.discord,   icoStart + 48, false)
@@ -817,7 +778,6 @@ local function BuildKeySystem(cfg, hui, onSuccess, onClose)
             cBtn.MouseButton1Click:Connect(function() clogToggle() end)
         end
 
-        -- Redeem logic
         redeemBtn.MouseButton1Click:Connect(function()
             local key = inputBox.Text
             if key == "" then
@@ -854,7 +814,6 @@ local function BuildKeySystem(cfg, hui, onSuccess, onClose)
         end)
     end
 
-    -- Shop strip
     if showShop then
         local shop = mkFrame(main, HEADER,
             UDim2.new(1,0,0,shopH),
@@ -894,9 +853,6 @@ local function BuildKeySystem(cfg, hui, onSuccess, onClose)
     end
 end
 
--- ═══════════════════════════════════════
--- LIBRARY
--- ═══════════════════════════════════════
 local Library = {}
 Library.__index = Library
 
@@ -937,6 +893,13 @@ function Library:KeySystem(cfg)
     return validated
 end
 
+function Library:Launch(cfg)
+    cfg = cfg or {}
+    local ok = self:KeySystem(cfg)
+    if not ok then return nil end
+    return self:Window(cfg)
+end
+
 function Library:Window(cfg)
     cfg = cfg or {}
     local WIN_W   = cfg.Width        or 580
@@ -954,7 +917,6 @@ function Library:Window(cfg)
     makeDrag(win, win)
     tw(win, {BackgroundTransparency=0, Size=UDim2.new(0,WIN_W,0,WIN_H)}, 0.35)
 
-    -- Header
     local tb = mkFrame(win, HEADER, UDim2.new(1,0,0,46))
     corner(tb, 10)
     mkFrame(tb, HEADER, UDim2.new(1,0,0,10), UDim2.new(0,0,1,-10))
@@ -985,7 +947,6 @@ function Library:Window(cfg)
     wCloseBtn.MouseEnter:Connect(function() wCloseBtn.ImageColor3 = ERROR_COL end)
     wCloseBtn.MouseLeave:Connect(function() wCloseBtn.ImageColor3 = DIM       end)
 
-    -- Reopen button: logo image, draggable
     local reopen = Instance.new("ImageButton")
     reopen.Size            = UDim2.new(0,52,0,52)
     reopen.Position        = UDim2.new(0,12,1,-72)
@@ -1006,7 +967,6 @@ function Library:Window(cfg)
         win.Visible = true; reopen.Visible = false
     end)
 
-    -- Sidebar
     local sidebar = mkFrame(win, HEADER,
         UDim2.new(0,SIDE_W,1,-46),
         UDim2.new(0,0,0,46))
